@@ -12,6 +12,7 @@ Requirements:
 - Gpytroch 
 - numpy
 - ovito
+- scipy
 
 # Usage
 
