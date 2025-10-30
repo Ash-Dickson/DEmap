@@ -1,3 +1,0 @@
-gpytorch
-numpy
-torch
