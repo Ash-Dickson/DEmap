@@ -1,0 +1,1 @@
+example.in can be used to run initial TDE checks. Replace the input file with your potential details, lammps data file, PKA id, and PKA velocity. Note that the velocity is in angstroms/picosecond (for metal units), so this must be converted into eV.
