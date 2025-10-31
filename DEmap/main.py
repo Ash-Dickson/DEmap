@@ -14,15 +14,20 @@ from DEmap import __version__
 from typing import Tuple, Optional
 import torch
 import gpytorch
-from plot_tools import *
-from TDE import evaluate_tde
-from sphere_utils import fibonacci_sphere, random_sphere_points
-from config import Config
-from kernels import ExactGPModel
-from gp_utils import save_checkpoint, load_checkpoint, query_model, estimate_imse, optimise_model, converge_check
-from lmp_input_generator import generate_lammps_input
-
-
+from DEmap.plot_tools import *
+from DEmap.TDE import evaluate_tde
+from DEmap.sphere_utils import fibonacci_sphere, random_sphere_points
+from DEmap.config import Config
+from DEmap.kernels import ExactGPModel
+from DEmap.gp_utils import (
+    save_checkpoint,
+    load_checkpoint,
+    query_model,
+    estimate_imse,
+    optimise_model,
+    converge_check
+)
+from DEmap.lmp_input_generator import generate_lammps_input
 
 
 def demap(cfg, theta_range: Optional[Tuple[float, float]] = None,
@@ -85,7 +90,7 @@ CORRESPONDANCE: a.dickson2@lancaster.ac.uk
         y_train = checkpoint['y_train']
         noise_train = checkpoint['noise_train']
         start_idx = X_train.shape[0]
-        init_pts = fibonacci_sphere(n=cfg.init_n, theta_range=theta_range, phi_range=phi_range)
+        init_pts = torch.tensor(fibonacci_sphere(n=cfg.init_n, theta_range=theta_range, phi_range=phi_range))
         print(f"Resuming initial sampling at point {start_idx}/{len(init_pts)}")
     elif not checkpoint:
         # Run from scratch w/o restart 
@@ -122,12 +127,15 @@ CORRESPONDANCE: a.dickson2@lancaster.ac.uk
     # Build GP model 
     y_mean = y_train.mean()
     y_std = y_train.std()
-    # Standardise to unit variance
+    # Standardise to unit variance and zero mean
     y_train_std = (y_train - y_mean) / y_std
+
+    # standardise Gaussian noise
+    noise_train_std = noise_train / (y_std ** 2)
 
     # Likelihood (noise) model
     likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(
-        noise=noise_train, learn_additional_noise=False
+        noise=noise_train_std, learn_additional_noise=False
     )
     model = ExactGPModel(X_train, y_train_std, likelihood)
     mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
@@ -152,12 +160,14 @@ CORRESPONDANCE: a.dickson2@lancaster.ac.uk
         save_checkpoint(X_train, y_train, noise_train, it, imse, stage="iter")
         
         # Grab predicted variance at all probe points
-        _, var_pred = query_model(model=model, likelihood=None, probe_pts=probe, y_std=y_std, y_mean=y_mean)
+        _, var_pred = query_model(model=model, likelihood=likelihood, probe_pts=probe, y_std=y_std, y_mean=y_mean)
         idx = torch.argmax(var_pred).item()
         # Find point with maximum variance
         new_pts = probe[idx].unsqueeze(0)
 
-        pred_mean, pred_var = query_model(model=model, likelihood=None, probe_pts=new_pts, y_std=y_std, y_mean=y_mean)
+
+        # Predict TDE of next point
+        pred_mean, pred_var = query_model(model=model, likelihood=likelihood, probe_pts=new_pts, y_std=y_std, y_mean=y_mean)
      
         
         # Efficient TDE evaluation by inclusion of guess start energy two standard deviations below predicted TDE, if lower than 1 eV
@@ -184,13 +194,15 @@ CORRESPONDANCE: a.dickson2@lancaster.ac.uk
         X_train = torch.cat([X_train, new_pts])
         y_train = torch.cat([y_train, torch.tensor(new_y)])
         noise_train = torch.cat([noise_train, torch.tensor(new_n)])
-        likelihood.noise = noise_train.clone()
         # Renormalise data 
         y_mean = y_train.mean()
         y_std = y_train.std()
         y_train_std = (y_train - y_mean) / y_std
+        noise_train_std = noise_train / (y_std ** 2)
 
         # Retrain model
+        # Update likelihood noise
+        likelihood.noise = noise_train_std.clone()
         model.set_train_data(X_train, y_train_std, strict=False)
         optimise_model(model, X_train, y_train_std, likelihood, mll)
         # Create arrays for evaluations at probe points

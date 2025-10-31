@@ -6,7 +6,7 @@ import numpy as np
 import subprocess
 import random
 import os
-from config import Config
+from DEmap.config import Config
 from typing import Tuple, Optional, Callable, List
 
 class TDE_simulation:

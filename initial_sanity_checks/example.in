@@ -1,0 +1,61 @@
+units metal
+dimension 3
+boundary p p p
+
+atom_style atomic
+
+read_data LAMMPS DATA FILE GOES HERE
+
+
+
+mass  MASS DATA GOES HERE
+
+pair_style PAIR STYLE DATA GOES HERE 
+
+pair_coeff * * PAIR DATA GOES HERE 
+
+neigh_modify delay 0 every 1 check yes
+
+thermo_style custom step temp pe ke press vol cella cellb cellc
+thermo 10
+
+# Define the entire simulation box dimensions
+variable xlo equal bound(all,xmin)
+variable xhi equal bound(all,xmax)
+variable ylo equal bound(all,ymin)
+variable yhi equal bound(all,ymax)
+variable zlo equal bound(all,zmin)
+variable zhi equal bound(all,zmax)
+
+# Define variables for the outer shell boundaries
+variable xlo_outer equal ${xlo} + 2.5
+variable xhi_outer equal ${xhi} - 2.5
+variable ylo_outer equal ${ylo} + 2.5
+variable yhi_outer equal ${yhi} - 2.5
+variable zlo_outer equal ${zlo} + 2.5
+variable zhi_outer equal ${zhi} - 2.5
+
+# Define regions for the outer shell
+region outer_xlo block ${xlo} ${xlo_outer} INF INF INF INF
+region outer_xhi block ${xhi_outer} ${xhi} INF INF INF INF
+region outer_ylo block INF INF ${ylo} ${ylo_outer} INF INF
+region outer_yhi block INF INF ${yhi_outer} ${yhi} INF INF
+region outer_zlo block INF INF INF INF ${zlo} ${zlo_outer}
+region outer_zhi block INF INF INF INF ${zhi_outer} ${zhi}
+
+# Combine the regions for the outer shell
+region outer_shell union 6 outer_xlo outer_xhi outer_ylo outer_yhi outer_zlo outer_zhi
+
+# Group atoms in the outer shell
+group boundary region outer_shell
+
+group core subtract all boundary
+group PKA id 
+
+velocity PKA set VELOCITY HERE IN ANGSTROMS PER PICOSECOND
+fix core_fix all nve
+fix boundary_fix boundary langevin 0 0 0.1 48279
+dump positions all atom 1000 prod.data
+dump_modify positions first yes
+
+run 10000

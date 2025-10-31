@@ -4,7 +4,7 @@ import matplotlib
 matplotlib.use("Agg")   # headless, no GUI
 import matplotlib.pyplot as plt
 from typing import Tuple, Optional, Callable, List, Literal
-from sphere_utils import sphere_to_polar
+from DEmap.sphere_utils import sphere_to_polar
 
 class Plot_Tools:
     

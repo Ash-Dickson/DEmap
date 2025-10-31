@@ -39,7 +39,7 @@ def optimise_model (model, X_train, y_train_std, likelihood, mll):
         
         prev_loss = loss_value
 
-def converge_check(imse, patience=30, slope_tol=1e-3):
+def converge_check(imse, patience=100, slope_tol=1e-3):
     """
     More robust convergence check based on IMSE stabilization.
 
@@ -90,7 +90,8 @@ def query_model(model, probe_pts, y_std, y_mean,likelihood=None):
     model.eval()
     with torch.no_grad():
         if likelihood is not None:
-            preds = likelihood(model(probe_pts), noise=torch.full((probe_pts.shape[0],), 0.5))
+            test_noise = torch.full((probe_pts.shape[0],), 0.5 / (y_std**2), dtype=torch.double)
+            preds = likelihood(model(probe_pts))
         else:
             preds = model(probe_pts)
         mean_pred = preds.mean * y_std + y_mean     # de-standardize back to eV

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # Needed for 3D projection
-from sphere_utils import *
+from DEmap.sphere_utils import *
 # Example: generate points in a wedge
 pts = fibonacci_sphere(
     n=200,
