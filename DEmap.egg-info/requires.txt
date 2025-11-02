@@ -1,0 +1,7 @@
+gpytorch
+numpy
+torch
+ovito
+dataclasses
+matplotlib
+scipy

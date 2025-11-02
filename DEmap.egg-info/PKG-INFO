@@ -1,0 +1,23 @@
+Metadata-Version: 2.4
+Name: DEmap
+Version: 0.14.0
+Summary: Machine-learn the threshold displacement energy surface of a material with Gaussian Process Regression. 
+Home-page: https://github.com/Ash-Dickson/DEmap
+Author: Ashley Dickson
+Author-email: a.dickson2@lancaster.ac.uk
+License: MIT license
+License-File: LICENSE.txt
+Requires-Dist: gpytorch
+Requires-Dist: numpy
+Requires-Dist: torch
+Requires-Dist: ovito
+Requires-Dist: dataclasses
+Requires-Dist: matplotlib
+Requires-Dist: scipy
+Dynamic: author
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: license
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: summary
